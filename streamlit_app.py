@@ -170,6 +170,7 @@ if uploaded_file:
     st.pyplot(fig)
 
     # --- Download ---
+    from io import BytesIO
     if uploaded_file:
         df_buses_reset = df_buses.reset_index().rename(columns={"index": "Time"})
 
