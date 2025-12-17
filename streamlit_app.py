@@ -142,13 +142,12 @@ if uploaded_file:
     D_bus_counts_int = build_bus_counts(Departure_Int, Departure_Rollover, time_index)
     D_bus_counts_dom = build_bus_counts(Departure_Dom, Departure_Rollover, time_index)
 
-    # --- Combine ---
+   # --- Combine bus counts ---
     df_buses = pd.DataFrame({
         "Arrival": A_bus_counts_int + A_bus_counts_dom,
         "Departure": D_bus_counts_int + D_bus_counts_dom,
         "Domestic": A_bus_counts_dom + D_bus_counts_dom
     })
-
     df_buses.index.name = "Time"
 
     st.subheader("Peak Bus Requirement")
@@ -170,19 +169,13 @@ if uploaded_file:
     plt.tight_layout()
     st.pyplot(fig)
 
-if uploaded_file:
-    # ... all processing ...
-
     # --- Download ---
     df_buses_reset = df_buses.reset_index().rename(columns={"index": "Time"})
-
-    # Prepare Excel data in memory
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_buses_reset.to_excel(writer, index=False, sheet_name="Bus_Requirements")
     output.seek(0)
 
-    # Streamlit download button
     st.download_button(
         label="Download Time Series as Excel",
         data=output,
