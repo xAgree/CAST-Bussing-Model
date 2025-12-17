@@ -172,8 +172,18 @@ if uploaded_file:
 
     # --- Download ---
     df_buses_reset = df_buses.reset_index().rename(columns={"index": "Time"})
-    st.download_button(
-        label="Download Time Series as Excel",
-        data=df_buses_reset.to_excel(index=False, engine='openpyxl'),
-        file_name="Time_Series.xlsx"
-    )
+    from io import BytesIO
+
+# Prepare Excel data in memory
+output = BytesIO()
+with pd.ExcelWriter(output, engine='openpyxl') as writer:
+    df_buses_reset.to_excel(writer, index=False, sheet_name="Bus_Requirements")
+output.seek(0)
+
+# Streamlit download button
+st.download_button(
+    label="Download Time Series as Excel",
+    data=output,
+    file_name="Time_Series.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
