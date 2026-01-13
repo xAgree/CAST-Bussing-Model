@@ -43,7 +43,8 @@ if uploaded_file:
             "Turnaround.Arrival Flight.Stand Name [String]",
             "Turnaround.Arrival Flight.Pax Count [Integer]",
             "Turnaround.Arrival Flight.Airport Code [String]",
-            "Turnaround.Arrival Flight.Terminal [String]"
+            "Turnaround.Arrival Flight.Terminal [String]",
+            "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]"
         ]
     ].rename(columns={
         "Turnaround.Arrival Flight.Flight Number [String]": "Flight_Number",
@@ -56,6 +57,7 @@ if uploaded_file:
         "Turnaround.Arrival Flight.Pax Count [Integer]": "Pax_Count",
         "Turnaround.Arrival Flight.Airport Code [String]": "Airport_Code",
         "Turnaround.Arrival Flight.Terminal [String]": "Terminal"
+        "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
     })
 
     # Turnaround Departure
@@ -70,7 +72,8 @@ if uploaded_file:
             "Turnaround.Departure Flight.Stand Name [String]",
             "Turnaround.Departure Flight.Pax Count [Integer]",
             "Turnaround.Departure Flight.Airport Code [String]",
-            "Turnaround.Departure Flight.Terminal [String]"
+            "Turnaround.Departure Flight.Terminal [String]",
+            "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]"
         ]
     ].rename(columns={
         "Turnaround.Departure Flight.Flight Number [String]": "Flight_Number",
@@ -82,7 +85,8 @@ if uploaded_file:
         "Turnaround.Departure Flight.Stand Name [String]": "Stand",
         "Turnaround.Departure Flight.Pax Count [Integer]": "Pax_Count",
         "Turnaround.Departure Flight.Airport Code [String]": "Airport_Code",
-        "Turnaround.Departure Flight.Terminal [String]": "Terminal"
+        "Turnaround.Departure Flight.Terminal [String]": "Terminal",
+        "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
     })
     # Datetime safety
     Arrival["Scheduled_Time"] = pd.to_datetime(Arrival["Scheduled_Time"], errors="coerce")
