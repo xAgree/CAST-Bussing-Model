@@ -56,7 +56,7 @@ if uploaded_file:
         "Turnaround.Arrival Flight.Stand Name [String]": "Stand",
         "Turnaround.Arrival Flight.Pax Count [Integer]": "Pax_Count",
         "Turnaround.Arrival Flight.Airport Code [String]": "Airport_Code",
-        "Turnaround.Arrival Flight.Terminal [String]": "Terminal"
+        "Turnaround.Arrival Flight.Terminal [String]": "Terminal",
         "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
     })
 
