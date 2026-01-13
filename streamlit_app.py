@@ -33,45 +33,57 @@ if uploaded_file:
 
     # --- Prepare Arrival & Departure ---
     Arrival = file[
-        [
-            "Arrival Flight.Flight Number [String]",
-            "Arrival Flight.Scheduled Block Time [Date/Time]",
-            "Arrival Flight.Stand Name [String]",
-            "Arrival Flight.Terminal [String]",
-            "Arrival Flight.Pax Count [Integer]",
-            "Arrival Flight.Aircraft Type [String]",
-            "Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]"
-        ]
-    ].rename(columns={
-        "Arrival Flight.Flight Number [String]": "Flight_Number",
-        "Arrival Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
-        "Arrival Flight.Stand Name [String]": "Stand",
-        "Arrival Flight.Terminal [String]": "Terminal",
-        "Arrival Flight.Pax Count [Integer]": "Pax_Count",
-        "Arrival Flight.Aircraft Type [String]": "Aircraft_Type",
-        "Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
-    })
+    [
+        "Arrival Flight.Flight Number [String]",
+        "Arrival Flight.Aircraft Type [String]",
+        "Arrival Flight.Airline Code [String]",
+        "Arrival Flight.Flight Type [String]",
+        "Arrival Flight.Flight Direction [Enumeration:TFlightDirection]",
+        "Turnaround.Arrival Flight.Scheduled Block Time [Date/Time]",
+        "Turnaround.Arrival Flight.Stand Name [String]",
+        "Turnaround.Arrival Flight.Pax Count [Integer]",
+        "Turnaround.Arrival Flight.Airport Code [String]",
+        "Turnaround.Arrival Flight.Terminal [String]"
+    ]
+].rename(columns={
+    "Turnaround.Arrival Flight.Flight Number [String]": "Flight_Number",
+    "Turnaround.Arrival Flight.Aircraft Type [String]": "Aircraft_Type",
+    "Turnaround.Arrival Flight.Airline Code [String]": "Airline_Code",
+    "Turnaround.Arrival Flight.Flight Type [String]": "Flight_Type",
+    "Turnaround.Arrival Flight.Flight Direction [Enumeration:TFlightDirection]": "Flight_Direction",
+    "Turnaround.Arrival Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
+    "Turnaround.Arrival Flight.Stand Name [String]": "Stand",
+    "Turnaround.Arrival Flight.Pax Count [Integer]": "Pax_Count",
+    "Turnaround.Arrival Flight.Airport Code [String]": "Airport_Code",
+    "Turnaround.Arrival Flight.Terminal [String]": "Terminal"
+})
 
-    Departure = file[
-        [
-            "Departure Flight.Flight Number [String]",
-            "Departure Flight.Scheduled Block Time [Date/Time]",
-            "Departure Flight.Stand Name [String]",
-            "Departure Flight.Terminal [String]",
-            "Departure Flight.Pax Count [Integer]",
-            "Departure Flight.Aircraft Type [String]",
-            "Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]"
-        ]
-    ].rename(columns={
-        "Departure Flight.Flight Number [String]": "Flight_Number",
-        "Departure Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
-        "Departure Flight.Stand Name [String]": "Stand",
-        "Departure Flight.Terminal [String]": "Terminal",
-        "Departure Flight.Pax Count [Integer]": "Pax_Count",
-        "Departure Flight.Aircraft Type [String]": "Aircraft_Type",
-        "Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
-    })
-
+# Turnaround Departure
+Departure = file[
+    [
+        "Turnaround.Departure Flight.Flight Number [String]",
+        "Turnaround.Departure Flight.Aircraft Type [String]",
+        "Turnaround.Departure Flight.Airline Code [String]",
+        "Turnaround.Departure Flight.Flight Type [String]",
+        "Turnaround.Departure Flight.Flight Direction [Enumeration:TFlightDirection]",
+        "Turnaround.Departure Flight.Scheduled Block Time [Date/Time]",
+        "Turnaround.Departure Flight.Stand Name [String]",
+        "Turnaround.Departure Flight.Pax Count [Integer]",
+        "Turnaround.Departure Flight.Airport Code [String]",
+        "Turnaround.Departure Flight.Terminal [String]"
+    ]
+].rename(columns={
+    "Turnaround.Departure Flight.Flight Number [String]": "Flight_Number",
+    "Turnaround.Departure Flight.Aircraft Type [String]": "Aircraft_Type",
+    "Turnaround.Departure Flight.Airline Code [String]": "Airline_Code",
+    "Turnaround.Departure Flight.Flight Type [String]": "Flight_Type",
+    "Turnaround.Departure Flight.Flight Direction [Enumeration:TFlightDirection]": "Flight_Direction",
+    "Turnaround.Departure Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
+    "Turnaround.Departure Flight.Stand Name [String]": "Stand",
+    "Turnaround.Departure Flight.Pax Count [Integer]": "Pax_Count",
+    "Turnaround.Departure Flight.Airport Code [String]": "Airport_Code",
+    "Turnaround.Departure Flight.Terminal [String]": "Terminal"
+})
     # Datetime safety
     Arrival["Scheduled_Time"] = pd.to_datetime(Arrival["Scheduled_Time"], errors="coerce")
     Departure["Scheduled_Time"] = pd.to_datetime(Departure["Scheduled_Time"], errors="coerce")
