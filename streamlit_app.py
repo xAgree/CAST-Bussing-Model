@@ -166,22 +166,38 @@ if uploaded_file:
     })
     df_buses.index.name = "Time"
 
+    # --- Plot ---
     st.subheader("Peak Bus Requirement")
     st.write(f"Peak buses needed: {int(df_buses.sum(axis=1).max())}")
 
-    # --- Plot ---
     st.subheader("Bus Utilization Over Time")
+
     fig, ax = plt.subplots(figsize=(16, 6))
-    df_buses_plot = df_buses.resample("15min").max()  # peak per 15-min interval
-    x_labels = df_buses_plot.index.strftime('%a %d-%m %H:%M')
-    df_buses_plot.plot(kind="bar", stacked=True, ax=ax, width=1)
+
+    # Resample to 15-minute peaks
+    df_buses_plot = df_buses.resample("15min").max()
+
+    # Bar plot
+    df_buses_plot.plot(
+        kind="bar",
+        stacked=True,
+        ax=ax,
+        width=1
+    )
+
     ax.set_xlabel("Time")
     ax.set_ylabel("Bus Count")
     ax.set_title("Number of Buses in Use (International + Domestic)")
     ax.legend(loc="upper right")
-    tick_positions = range(0, len(df_buses_plot), max(1, len(df_buses_plot)//9))
+
+    # ---- Force x-ticks at 00:00 each day ----
+    midnight_mask = df_buses_plot.index.time == pd.to_datetime("00:00").time()
+    tick_positions = np.where(midnight_mask)[0]
+    tick_labels = df_buses_plot.index[midnight_mask].strftime('%a %d-%m %H:%M')
+
     ax.set_xticks(tick_positions)
-    ax.set_xticklabels(x_labels[tick_positions], rotation=45, ha="right")
+    ax.set_xticklabels(tick_labels, rotation=45, ha="right")
+
     plt.tight_layout()
     st.pyplot(fig)
 
