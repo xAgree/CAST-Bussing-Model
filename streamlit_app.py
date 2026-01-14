@@ -11,8 +11,8 @@ warnings.simplefilter(action="ignore", category=pd.errors.SettingWithCopyWarning
 
 # Constants
 BUS_CAPACITY = 60
-Arrival_TimeFrame = 30
-Departure_TimeFrame = 30
+Arrival_TimeFrame = 45
+Departure_TimeFrame = 45
 Domestic_TimeFrame = 15
 transit_time = 21.7
 
