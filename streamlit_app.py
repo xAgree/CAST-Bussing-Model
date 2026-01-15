@@ -15,6 +15,7 @@ Arrival_TimeFrame = 45
 Departure_TimeFrame = 45
 Domestic_TimeFrame = 15
 transit_time = 21.7
+FLIGHT_LOAD_FACTOR = 0.8  # 80% passenger load
 
 Arrival_Rollover   = pd.Timedelta(minutes=Arrival_TimeFrame - 15)
 Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame - 15)
@@ -88,6 +89,7 @@ if uploaded_file:
         "Turnaround.Departure Flight.Terminal [String]": "Terminal",
         "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
     })
+
     # Datetime safety
     Arrival["Scheduled_Time"] = pd.to_datetime(Arrival["Scheduled_Time"], errors="coerce")
     Departure["Scheduled_Time"] = pd.to_datetime(Departure["Scheduled_Time"], errors="coerce")
@@ -106,6 +108,10 @@ if uploaded_file:
 
     Arrival = filter_flights(Arrival)
     Departure = filter_flights(Departure)
+
+    # --- Apply 80% flight load factor ---
+    Arrival["Effective_Pax"] = np.ceil(Arrival["Pax_Count"] * FLIGHT_LOAD_FACTOR)
+    Departure["Effective_Pax"] = np.ceil(Departure["Pax_Count"] * FLIGHT_LOAD_FACTOR)
 
     # --- Gate times ---
     # Arrival
@@ -133,7 +139,7 @@ if uploaded_file:
         return bus_counts
 
     # --- Arrival ---
-    Arrival["Trips_Needed"] = np.ceil(Arrival["Pax_Count"] / BUS_CAPACITY)
+    Arrival["Trips_Needed"] = np.ceil(Arrival["Effective_Pax"] / BUS_CAPACITY)
     max_trips_A = Arrival_TimeFrame // transit_time
     Arrival["buses_needed_per_flight"] = np.ceil(Arrival["Trips_Needed"] / max_trips_A)
 
@@ -148,7 +154,7 @@ if uploaded_file:
     A_bus_counts_dom = build_bus_counts(Arrival_Dom, Arrival_Rollover, time_index)
 
     # --- Departure ---
-    Departure["Trips_Needed"] = np.ceil(Departure["Pax_Count"] / BUS_CAPACITY)
+    Departure["Trips_Needed"] = np.ceil(Departure["Effective_Pax"] / BUS_CAPACITY)
     max_trips_D = Departure_TimeFrame // transit_time
     Departure["buses_needed_per_flight"] = np.ceil(Departure["Trips_Needed"] / max_trips_D)
 
@@ -158,7 +164,7 @@ if uploaded_file:
     D_bus_counts_int = build_bus_counts(Departure_Int, Departure_Rollover, time_index)
     D_bus_counts_dom = build_bus_counts(Departure_Dom, Departure_Rollover, time_index)
 
-   # --- Combine bus counts ---
+    # --- Combine bus counts ---
     df_buses = pd.DataFrame({
         "Arrival": A_bus_counts_int + A_bus_counts_dom,
         "Departure": D_bus_counts_int + D_bus_counts_dom,
@@ -203,19 +209,18 @@ if uploaded_file:
 
     # --- Download ---
     from io import BytesIO
-    if uploaded_file:
-        df_buses_reset = df_buses.reset_index().rename(columns={"index": "Time"})
+    df_buses_reset = df_buses.reset_index().rename(columns={"index": "Time"})
 
-        # Prepare Excel data in memory
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df_buses_reset.to_excel(writer, index=False, sheet_name="Bus_Requirements")
-        output.seek(0)
+    # Prepare Excel data in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_buses_reset.to_excel(writer, index=False, sheet_name="Bus_Requirements")
+    output.seek(0)
 
-        # Streamlit download button
-        st.download_button(
-            label="Download Time Series as Excel",
-            data=output,
-            file_name="Time_Series.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    # Streamlit download button
+    st.download_button(
+        label="Download Time Series as Excel",
+        data=output,
+        file_name="Time_Series.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
