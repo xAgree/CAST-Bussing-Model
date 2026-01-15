@@ -16,8 +16,8 @@ Departure_TimeFrame = 45
 Domestic_TimeFrame = 15
 transit_time = 21.7
 
-Arrival_Rollover   = pd.Timedelta(minutes=Arrival_TimeFrame - 20)
-Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame - 20)
+Arrival_Rollover   = pd.Timedelta(minutes=Arrival_TimeFrame)
+Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame)
 Domestic_Rollover = pd.Timedelta(minutes=Domestic_TimeFrame)
 
 st.title("Airport Bus Requirement Calculator")
