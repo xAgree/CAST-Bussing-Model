@@ -15,13 +15,11 @@ warnings.simplefilter(action="ignore", category=pd.errors.SettingWithCopyWarning
 BUS_CAPACITY = 60
 Arrival_TimeFrame = 45
 Departure_TimeFrame = 45
-Domestic_TimeFrame = 15
 transit_time = 21.7
 FLIGHT_LOAD_FACTOR = 0.86
 
 Arrival_Rollover = pd.Timedelta(minutes=Arrival_TimeFrame - 15)
 Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame - 15)
-Domestic_Rollover = pd.Timedelta(minutes=Domestic_TimeFrame)
 
 st.title("Airport Bus Requirement Calculator")
 
@@ -42,12 +40,10 @@ if uploaded_file:
     Arrival = file[[
         "Turnaround.Arrival Flight.Scheduled Block Time [Date/Time]",
         "Turnaround.Arrival Flight.Pax Count [Integer]",
-        "Turnaround.Arrival Flight.Terminal [String]",
         "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]"
     ]].rename(columns={
         "Turnaround.Arrival Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
         "Turnaround.Arrival Flight.Pax Count [Integer]": "Pax_Count",
-        "Turnaround.Arrival Flight.Terminal [String]": "Terminal",
         "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
     })
 
@@ -57,12 +53,10 @@ if uploaded_file:
     Departure = file[[
         "Turnaround.Departure Flight.Scheduled Block Time [Date/Time]",
         "Turnaround.Departure Flight.Pax Count [Integer]",
-        "Turnaround.Departure Flight.Terminal [String]",
         "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]"
     ]].rename(columns={
         "Turnaround.Departure Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
         "Turnaround.Departure Flight.Pax Count [Integer]": "Pax_Count",
-        "Turnaround.Departure Flight.Terminal [String]": "Terminal",
         "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
     })
 
@@ -70,7 +64,7 @@ if uploaded_file:
     Departure["Scheduled_Time"] = pd.to_datetime(Departure["Scheduled_Time"], errors="coerce")
 
     # -----------------------------
-    # Filter Remote Bus Ops Only
+    # Filter Remote Stands
     # -----------------------------
     def filter_remote(df):
         return df[
@@ -97,25 +91,7 @@ if uploaded_file:
     Departure["Gate Start"] = Departure["Scheduled_Time"] - Departure_Rollover
 
     # -----------------------------
-    # Bus Calculation Function
-    # -----------------------------
-    def build_bus_counts(df, rollover, time_index):
-        bus_counts = pd.Series(0, index=time_index)
-
-        for _, row in df.iterrows():
-            start = row["Gate Start"]
-            end = row["Gate End"]
-
-            trips = np.ceil(row["Effective_Pax"] / BUS_CAPACITY)
-            max_trips = Arrival_TimeFrame // transit_time
-            buses = int(np.ceil(trips / max_trips))
-
-            bus_counts.loc[start:end] += buses
-
-        return bus_counts
-
-    # -----------------------------
-    # Time Index (5 min base)
+    # Build Time Index (5-min)
     # -----------------------------
     start_time = min(
         Arrival["Gate Start"].min(),
@@ -129,34 +105,50 @@ if uploaded_file:
 
     time_index = pd.date_range(start=start_time, end=end_time, freq="5min")
 
-    A_counts = build_bus_counts(Arrival, Arrival_Rollover, time_index)
-    D_counts = build_bus_counts(Departure, Departure_Rollover, time_index)
+    # -----------------------------
+    # Bus Calculation Function
+    # -----------------------------
+    def build_bus_counts(df, rollover):
+        bus_counts = pd.Series(0, index=time_index)
+
+        for _, row in df.iterrows():
+
+            trips = np.ceil(row["Effective_Pax"] / BUS_CAPACITY)
+            max_trips = Arrival_TimeFrame // transit_time
+            buses = int(np.ceil(trips / max_trips))
+
+            bus_counts.loc[row["Gate Start"]:row["Gate End"]] += buses
+
+        return bus_counts
+
+    A_counts = build_bus_counts(Arrival, Arrival_Rollover)
+    D_counts = build_bus_counts(Departure, Departure_Rollover)
 
     # -----------------------------
-    # Combine & Resample to 15 min
+    # Combine (5-min resolution)
     # -----------------------------
     df_buses = pd.DataFrame({
         "Arrival": A_counts,
         "Departure": D_counts
     })
 
-    df_buses_15 = df_buses.resample("15min").max()
-    df_buses_15["Total"] = df_buses_15.sum(axis=1)
+    df_buses["Total"] = df_buses.sum(axis=1)
+    df_buses.index.name = "Time"
 
     # -----------------------------
-    # Display Peak
+    # Peak (5-min true peak)
     # -----------------------------
-    st.subheader("Peak Bus Requirement (15-Minute Peak)")
-    st.write(f"Peak buses needed: {int(df_buses_15['Total'].max())}")
+    st.subheader("Peak Bus Requirement (5-Minute Resolution)")
+    st.write(f"Peak buses needed: {int(df_buses['Total'].max())}")
 
     # -----------------------------
-    # Plot
+    # Plot (5-min)
     # -----------------------------
-    st.subheader("Bus Utilization Over Time (15-Minute Peak)")
+    st.subheader("Bus Utilization Over Time (5-Minute Resolution)")
 
     fig, ax = plt.subplots(figsize=(16, 6))
 
-    df_buses_15[["Arrival", "Departure"]].plot(
+    df_buses[["Arrival", "Departure"]].plot(
         kind="bar",
         stacked=True,
         ax=ax,
@@ -165,12 +157,12 @@ if uploaded_file:
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Number of Buses")
-    ax.set_title("Buses in Use (15-Minute Maximum)")
+    ax.set_title("Buses in Use (5-Minute Intervals)")
     ax.legend(loc="upper right")
 
-    midnight_mask = df_buses_15.index.time == pd.to_datetime("00:00").time()
+    midnight_mask = df_buses.index.time == pd.to_datetime("00:00").time()
     tick_positions = np.where(midnight_mask)[0]
-    tick_labels = df_buses_15.index[midnight_mask].strftime("%a %d-%m")
+    tick_labels = df_buses.index[midnight_mask].strftime("%a %d-%m")
 
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(tick_labels, rotation=45, ha="right")
@@ -179,19 +171,19 @@ if uploaded_file:
     st.pyplot(fig)
 
     # -----------------------------
-    # Export (MATCHES GRAPH)
+    # Export (5-min EXACT match)
     # -----------------------------
-    export_df = df_buses_15.reset_index()
+    export_df = df_buses.reset_index()
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        export_df.to_excel(writer, index=False, sheet_name="15min_Bus_Requirements")
+        export_df.to_excel(writer, index=False, sheet_name="5min_Bus_Requirements")
 
     output.seek(0)
 
     st.download_button(
-        label="Download 15-Minute Bus Requirements",
+        label="Download 5-Minute Bus Requirements",
         data=output,
-        file_name="Bus_Requirements_15min.xlsx",
+        file_name="Bus_Requirements_5min.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
