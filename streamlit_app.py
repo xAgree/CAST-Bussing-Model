@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 import warnings
 from io import BytesIO
 
+# Ignore SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=pd.errors.SettingWithCopyWarning)
 
-# -----------------------
+# -----------------------------
 # Constants
-# -----------------------
+# -----------------------------
 BUS_CAPACITY = 60
 Arrival_TimeFrame = 45
 Departure_TimeFrame = 45
@@ -19,9 +20,9 @@ Domestic_TimeFrame = 15
 transit_time = 21.7
 FLIGHT_LOAD_FACTOR = 0.86
 
-Arrival_Rollover   = pd.Timedelta(minutes=Arrival_TimeFrame - 15)
+Arrival_Rollover = pd.Timedelta(minutes=Arrival_TimeFrame - 15)
 Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame - 15)
-Domestic_Rollover  = pd.Timedelta(minutes=Domestic_TimeFrame)
+Domestic_Rollover = pd.Timedelta(minutes=Domestic_TimeFrame)
 
 st.title("Airport Bus Requirement Calculator")
 
@@ -29,189 +30,259 @@ uploaded_file = st.file_uploader("Upload Beontra Excel file", type=["xlsx"])
 
 if uploaded_file:
 
+    # -----------------------------
+    # Load File
+    # -----------------------------
     file = pd.read_excel(uploaded_file)
     file.columns = file.columns.str.strip()
-
     st.success("File uploaded successfully!")
 
-    # -----------------------
-    # Prepare Data
-    # -----------------------
+    # -----------------------------
+    # Prepare Arrival Data
+    # -----------------------------
+    Arrival = file[
+        [
+            "Turnaround.Arrival Flight.Flight Number [String]",
+            "Turnaround.Arrival Flight.Aircraft Type [String]",
+            "Turnaround.Arrival Flight.Airline Code [String]",
+            "Turnaround.Arrival Flight.Flight Type [String]",
+            "Turnaround.Arrival Flight.Flight Direction [Enumeration:TFlightDirection]",
+            "Turnaround.Arrival Flight.Scheduled Block Time [Date/Time]",
+            "Turnaround.Arrival Flight.Stand Name [String]",
+            "Turnaround.Arrival Flight.Pax Count [Integer]",
+            "Turnaround.Arrival Flight.Airport Code [String]",
+            "Turnaround.Arrival Flight.Terminal [String]",
+            "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]",
+        ]
+    ].rename(
+        columns={
+            "Turnaround.Arrival Flight.Flight Number [String]": "Flight_Number",
+            "Turnaround.Arrival Flight.Aircraft Type [String]": "Aircraft_Type",
+            "Turnaround.Arrival Flight.Airline Code [String]": "Airline_Code",
+            "Turnaround.Arrival Flight.Flight Type [String]": "Flight_Type",
+            "Turnaround.Arrival Flight.Flight Direction [Enumeration:TFlightDirection]": "Flight_Direction",
+            "Turnaround.Arrival Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
+            "Turnaround.Arrival Flight.Stand Name [String]": "Stand",
+            "Turnaround.Arrival Flight.Pax Count [Integer]": "Pax_Count",
+            "Turnaround.Arrival Flight.Airport Code [String]": "Airport_Code",
+            "Turnaround.Arrival Flight.Terminal [String]": "Terminal",
+            "Turnaround.Arrival Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type",
+        }
+    )
 
-    def prepare(df, prefix):
-        return df[
-            [
-                f"{prefix}.Flight Number [String]",
-                f"{prefix}.Aircraft Type [String]",
-                f"{prefix}.Airline Code [String]",
-                f"{prefix}.Flight Type [String]",
-                f"{prefix}.Flight Direction [Enumeration:TFlightDirection]",
-                f"{prefix}.Scheduled Block Time [Date/Time]",
-                f"{prefix}.Stand Name [String]",
-                f"{prefix}.Pax Count [Integer]",
-                f"{prefix}.Airport Code [String]",
-                f"{prefix}.Terminal [String]",
-                f"{prefix}.Stand.Stand Type [Enumeration:TStandHandlingType]"
-            ]
-        ].rename(columns={
-            f"{prefix}.Flight Number [String]": "Flight_Number",
-            f"{prefix}.Aircraft Type [String]": "Aircraft_Type",
-            f"{prefix}.Airline Code [String]": "Airline_Code",
-            f"{prefix}.Flight Type [String]": "Flight_Type",
-            f"{prefix}.Flight Direction [Enumeration:TFlightDirection]": "Flight_Direction",
-            f"{prefix}.Scheduled Block Time [Date/Time]": "Scheduled_Time",
-            f"{prefix}.Stand Name [String]": "Stand",
-            f"{prefix}.Pax Count [Integer]": "Pax_Count",
-            f"{prefix}.Airport Code [String]": "Airport_Code",
-            f"{prefix}.Terminal [String]": "Terminal",
-            f"{prefix}.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type"
-        })
+    # -----------------------------
+    # Prepare Departure Data
+    # -----------------------------
+    Departure = file[
+        [
+            "Turnaround.Departure Flight.Flight Number [String]",
+            "Turnaround.Departure Flight.Aircraft Type [String]",
+            "Turnaround.Departure Flight.Airline Code [String]",
+            "Turnaround.Departure Flight.Flight Type [String]",
+            "Turnaround.Departure Flight.Flight Direction [Enumeration:TFlightDirection]",
+            "Turnaround.Departure Flight.Scheduled Block Time [Date/Time]",
+            "Turnaround.Departure Flight.Stand Name [String]",
+            "Turnaround.Departure Flight.Pax Count [Integer]",
+            "Turnaround.Departure Flight.Airport Code [String]",
+            "Turnaround.Departure Flight.Terminal [String]",
+            "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]",
+        ]
+    ].rename(
+        columns={
+            "Turnaround.Departure Flight.Flight Number [String]": "Flight_Number",
+            "Turnaround.Departure Flight.Aircraft Type [String]": "Aircraft_Type",
+            "Turnaround.Departure Flight.Airline Code [String]": "Airline_Code",
+            "Turnaround.Departure Flight.Flight Type [String]": "Flight_Type",
+            "Turnaround.Departure Flight.Flight Direction [Enumeration:TFlightDirection]": "Flight_Direction",
+            "Turnaround.Departure Flight.Scheduled Block Time [Date/Time]": "Scheduled_Time",
+            "Turnaround.Departure Flight.Stand Name [String]": "Stand",
+            "Turnaround.Departure Flight.Pax Count [Integer]": "Pax_Count",
+            "Turnaround.Departure Flight.Airport Code [String]": "Airport_Code",
+            "Turnaround.Departure Flight.Terminal [String]": "Terminal",
+            "Turnaround.Departure Flight.Stand.Stand Type [Enumeration:TStandHandlingType]": "Stand Type",
+        }
+    )
 
-    Arrival = prepare(file, "Turnaround.Arrival Flight")
-    Departure = prepare(file, "Turnaround.Departure Flight")
-
+    # -----------------------------
+    # Datetime Safety
+    # -----------------------------
     Arrival["Scheduled_Time"] = pd.to_datetime(Arrival["Scheduled_Time"], errors="coerce")
     Departure["Scheduled_Time"] = pd.to_datetime(Departure["Scheduled_Time"], errors="coerce")
 
+    # -----------------------------
+    # Filter Remote Stands
+    # -----------------------------
     def filter_flights(df):
         return df[
-            df["Stand Type"].str.contains("Remote", na=False) &
-            df["Terminal"].str.contains("International|Domestic", regex=True, na=False) &
-            (df["Pax_Count"] != 0)
+            df["Stand Type"].str.contains("Remote", na=False)
+            & (
+                df["Terminal"].str.contains("International|Domestic", regex=True, na=False)
+                | df["Terminal"].isna()
+                | (df["Terminal"].str.strip() == "")
+            )
+            & (df["Pax_Count"] != 0)
         ].copy()
 
     Arrival = filter_flights(Arrival)
     Departure = filter_flights(Departure)
 
-    # -----------------------
-    # Load Factor
-    # -----------------------
-
+    # -----------------------------
+    # Apply Load Factor
+    # -----------------------------
     Arrival["Effective_Pax"] = np.ceil(Arrival["Pax_Count"] * FLIGHT_LOAD_FACTOR)
     Departure["Effective_Pax"] = np.ceil(Departure["Pax_Count"] * FLIGHT_LOAD_FACTOR)
 
-    # -----------------------
+    # -----------------------------
     # Gate Times
-    # -----------------------
-
+    # -----------------------------
     # Arrival
     Arrival["Gate Start Time"] = Arrival["Scheduled_Time"]
-    Arrival.loc[Arrival["Terminal"] == "International", "Gate End Time"] = (
-        Arrival["Gate Start Time"] + Arrival_Rollover
-    )
-    Arrival.loc[Arrival["Terminal"] == "Domestic", "Gate End Time"] = (
-        Arrival["Gate Start Time"] + Domestic_Rollover
-    )
+
+    Arrival.loc[
+        Arrival["Terminal"] == "International", "Gate End Time"
+    ] = Arrival["Gate Start Time"] + Arrival_Rollover
+
+    Arrival.loc[
+        Arrival["Terminal"] == "Domestic", "Gate End Time"
+    ] = Arrival["Gate Start Time"] + Domestic_Rollover
 
     # Departure
     Departure["Gate End Time"] = Departure["Scheduled_Time"]
-    Departure.loc[Departure["Terminal"] == "International", "Gate Start Time"] = (
-        Departure["Gate End Time"] - Departure_Rollover
-    )
-    Departure.loc[Departure["Terminal"] == "Domestic", "Gate Start Time"] = (
-        Departure["Gate End Time"] - Domestic_Rollover
-    )
 
-    # -----------------------
-    # Bus Calculation
-    # -----------------------
+    Departure.loc[
+        Departure["Terminal"] == "International", "Gate Start Time"
+    ] = Departure["Gate End Time"] - Departure_Rollover
 
-    def build_bus_counts(df, time_index):
+    Departure.loc[
+        Departure["Terminal"] == "Domestic", "Gate Start Time"
+    ] = Departure["Gate End Time"] - Domestic_Rollover
+
+    # -----------------------------
+    # Bus Calculation Function
+    # -----------------------------
+    def build_bus_counts(df, rollover, time_index):
         bus_counts = pd.Series(0, index=time_index)
+
         for _, row in df.iterrows():
             start = row["Gate Start Time"]
-            end   = row["Gate End Time"]
+            delta = rollover
             buses = int(row["buses_needed_per_flight"])
-            bus_counts.loc[start:end] += buses
+
+            if row["Trips_Needed"] % 2 == 1:
+                bus_counts.loc[start : start + delta] += buses - 1
+                bus_counts.loc[start : start + (delta / 2)] += 1
+            else:
+                bus_counts.loc[start : start + delta] += buses
+
         return bus_counts
 
-    # Trips & buses
+    # -----------------------------
+    # Arrival Calculations
+    # -----------------------------
     Arrival["Trips_Needed"] = np.ceil(Arrival["Effective_Pax"] / BUS_CAPACITY)
     max_trips_A = Arrival_TimeFrame // transit_time
-    Arrival["buses_needed_per_flight"] = np.ceil(Arrival["Trips_Needed"] / max_trips_A)
+    Arrival["buses_needed_per_flight"] = np.ceil(
+        Arrival["Trips_Needed"] / max_trips_A
+    )
 
-    Departure["Trips_Needed"] = np.ceil(Departure["Effective_Pax"] / BUS_CAPACITY)
-    max_trips_D = Departure_TimeFrame // transit_time
-    Departure["buses_needed_per_flight"] = np.ceil(Departure["Trips_Needed"] / max_trips_D)
-
-    # -----------------------
-    # 5-Minute Time Index
-    # -----------------------
+    Arrival_Int = Arrival[Arrival["Terminal"].str.contains("International", na=False)]
+    Arrival_Dom = Arrival[Arrival["Terminal"].str.contains("Domestic", na=False)]
 
     start_time = min(
         Arrival["Gate Start Time"].min(),
-        Departure["Gate Start Time"].min()
+        Departure["Scheduled_Time"].min(),
     ).floor("D")
 
     end_time = max(
         Arrival["Gate End Time"].max(),
-        Departure["Gate End Time"].max()
+        Departure["Scheduled_Time"].max(),
     ).replace(hour=23, minute=55)
 
     time_index = pd.date_range(start=start_time, end=end_time, freq="5min")
 
-    # Build 5-min series
-    A_total = build_bus_counts(Arrival, time_index)
-    D_total = build_bus_counts(Departure, time_index)
+    A_bus_counts_int = build_bus_counts(Arrival_Int, Arrival_Rollover, time_index)
+    A_bus_counts_dom = build_bus_counts(Arrival_Dom, Arrival_Rollover, time_index)
 
-    df_buses = pd.DataFrame({
-        "Arrival": A_total,
-        "Departure": D_total
-    })
+    # -----------------------------
+    # Departure Calculations
+    # -----------------------------
+    Departure["Trips_Needed"] = np.ceil(Departure["Effective_Pax"] / BUS_CAPACITY)
+    max_trips_D = Departure_TimeFrame // transit_time
+    Departure["buses_needed_per_flight"] = np.ceil(
+        Departure["Trips_Needed"] / max_trips_D
+    )
+
+    Departure_Int = Departure[Departure["Terminal"].str.contains("International", na=False)]
+    Departure_Dom = Departure[Departure["Terminal"].str.contains("Domestic", na=False)]
+
+    D_bus_counts_int = build_bus_counts(Departure_Int, Departure_Rollover, time_index)
+    D_bus_counts_dom = build_bus_counts(Departure_Dom, Departure_Rollover, time_index)
+
+    # -----------------------------
+    # Combine Bus Counts
+    # -----------------------------
+    df_buses = pd.DataFrame(
+        {
+            "Arrival": A_bus_counts_int + A_bus_counts_dom,
+            "Departure": D_bus_counts_int + D_bus_counts_dom,
+            "Domestic": A_bus_counts_dom + D_bus_counts_dom,
+        }
+    )
 
     df_buses.index.name = "Time"
 
-    # -----------------------
-    # Peak (5-min exact)
-    # -----------------------
-
-    peak_value = int(df_buses.sum(axis=1).max())
-
+    # -----------------------------
+    # Plot
+    # -----------------------------
     st.subheader("Peak Bus Requirement")
-    st.write(f"Peak buses needed (5-min peak): {peak_value}")
+    st.write(f"Peak buses needed: {int(df_buses.sum(axis=1).max())}")
 
-    # -----------------------
-    # Plot (5-min)
-    # -----------------------
-
-    st.subheader("Bus Utilization Over Time (5-Min Intervals)")
+    st.subheader("Bus Utilization Over Time")
 
     fig, ax = plt.subplots(figsize=(16, 6))
 
-    df_buses.plot(
+    df_buses_plot = df_buses.resample("15min").max()
+
+    df_buses_plot.plot(
         kind="bar",
         stacked=True,
         ax=ax,
-        width=1
+        width=1,
     )
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Bus Count")
-    ax.set_title("Number of Buses in Use (Arrival + Departure)")
+    ax.set_title("Number of Buses in Use (International + Domestic)")
     ax.legend(loc="upper right")
 
-    # Reduce x tick density for readability
-    ax.set_xticks(range(0, len(df_buses.index), 12))
-    ax.set_xticklabels(
-        df_buses.index[::12].strftime('%d-%m %H:%M'),
-        rotation=45,
-        ha="right"
-    )
+    midnight_mask = df_buses_plot.index.time == pd.to_datetime("00:00").time()
+    tick_positions = np.where(midnight_mask)[0]
+    tick_labels = df_buses_plot.index[midnight_mask].strftime("%a %d-%m %H:%M")
+
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(tick_labels, rotation=45, ha="right")
 
     plt.tight_layout()
     st.pyplot(fig)
 
-    # -----------------------
-    # Download (5-min data)
-    # -----------------------
+    # -----------------------------
+    # Download Excel
+    # -----------------------------
+    df_buses_reset = df_buses.reset_index()
 
     output = BytesIO()
-    df_buses.reset_index().to_excel(output, index=False, sheet_name="Bus_Requirements")
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df_buses_reset.to_excel(
+            writer,
+            index=False,
+            sheet_name="Bus_Requirements",
+        )
+
     output.seek(0)
 
     st.download_button(
-        label="Download 5-Min Time Series as Excel",
+        label="Download Time Series as Excel",
         data=output,
-        file_name="Time_Series_5min.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        file_name="Time_Series.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
