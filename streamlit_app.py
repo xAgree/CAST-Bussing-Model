@@ -86,6 +86,7 @@ if uploaded_file:
     # -----------------------
     # Load Factor
     # -----------------------
+
     Arrival["Effective_Pax"] = np.ceil(Arrival["Pax_Count"] * FLIGHT_LOAD_FACTOR)
     Departure["Effective_Pax"] = np.ceil(Departure["Pax_Count"] * FLIGHT_LOAD_FACTOR)
 
@@ -115,59 +116,50 @@ if uploaded_file:
     # Bus Calculation
     # -----------------------
 
-    def build_bus_counts(df, rollover, time_index):
+    def build_bus_counts(df, time_index):
         bus_counts = pd.Series(0, index=time_index)
         for _, row in df.iterrows():
             start = row["Gate Start Time"]
-            delta = rollover
+            end   = row["Gate End Time"]
             buses = int(row["buses_needed_per_flight"])
-            bus_counts.loc[start:start + delta] += buses
+            bus_counts.loc[start:end] += buses
         return bus_counts
 
-    # Arrival calculations
+    # Trips + buses
     Arrival["Trips_Needed"] = np.ceil(Arrival["Effective_Pax"] / BUS_CAPACITY)
     max_trips_A = Arrival_TimeFrame // transit_time
     Arrival["buses_needed_per_flight"] = np.ceil(Arrival["Trips_Needed"] / max_trips_A)
 
-    # Departure calculations
     Departure["Trips_Needed"] = np.ceil(Departure["Effective_Pax"] / BUS_CAPACITY)
     max_trips_D = Departure_TimeFrame // transit_time
     Departure["buses_needed_per_flight"] = np.ceil(Departure["Trips_Needed"] / max_trips_D)
 
-    # Split International / Domestic
-    Arrival_Int = Arrival[Arrival["Terminal"] == "International"]
-    Arrival_Dom = Arrival[Arrival["Terminal"] == "Domestic"]
-    Departure_Int = Departure[Departure["Terminal"] == "International"]
-    Departure_Dom = Departure[Departure["Terminal"] == "Domestic"]
-
-    # Time Index
+    # Time index
     start_time = min(Arrival["Gate Start Time"].min(), Departure["Gate Start Time"].min()).floor("D")
     end_time = max(Arrival["Gate End Time"].max(), Departure["Gate End Time"].max()).replace(hour=23, minute=55)
 
     time_index = pd.date_range(start=start_time, end=end_time, freq="5min")
 
-    # Build Series
-    A_int = build_bus_counts(Arrival_Int, Arrival_Rollover, time_index)
-    A_dom = build_bus_counts(Arrival_Dom, Domestic_Rollover, time_index)
-    D_int = build_bus_counts(Departure_Int, Departure_Rollover, time_index)
-    D_dom = build_bus_counts(Departure_Dom, Domestic_Rollover, time_index)
+    # Build series
+    A_total = build_bus_counts(Arrival, time_index)
+    D_total = build_bus_counts(Departure, time_index)
 
     # -----------------------
-    # FINAL CLEAN STRUCTURE
+    # Final DataFrame
     # -----------------------
 
     df_buses = pd.DataFrame({
-        "International": A_int + D_int,
-        "Domestic": A_dom + D_dom
+        "Arrival": A_total,
+        "Departure": D_total
     })
 
     df_buses.index.name = "Time"
 
-    # Resample FIRST (so peak matches graph)
+    # Resample FIRST so peak matches graph
     df_buses_plot = df_buses.resample("15min").max()
 
     # -----------------------
-    # Peak Display
+    # Peak
     # -----------------------
 
     peak_value = int(df_buses_plot.sum(axis=1).max())
@@ -192,7 +184,7 @@ if uploaded_file:
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Bus Count")
-    ax.set_title("Number of Buses in Use (International + Domestic)")
+    ax.set_title("Number of Buses in Use (Arrival + Departure)")
     ax.legend(loc="upper right")
 
     midnight_mask = df_buses_plot.index.time == pd.to_datetime("00:00").time()
