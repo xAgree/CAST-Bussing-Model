@@ -235,7 +235,7 @@ if uploaded_file:
     # Plot
     # -----------------------------
     st.subheader("Peak Bus Requirement")
-    st.write(f"Peak buses needed: {int(df_buses.sum(axis=1).max())}")
+    st.write(f"Peak buses needed: {int(df_buses_plot.sum(axis=1).max())}")
 
     st.subheader("Bus Utilization Over Time")
 
