@@ -16,6 +16,8 @@ Arrival_TimeFrame = 45
 Departure_TimeFrame = 45
 Domestic_TimeFrame = 15
 transit_time = 21.7
+FLIGHT_LOAD_FACTOR = 1
+
 
 Arrival_Rollover = pd.Timedelta(minutes=Arrival_TimeFrame)
 Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame)
