@@ -125,7 +125,7 @@ if uploaded_file:
             bus_counts.loc[start:end] += buses
         return bus_counts
 
-    # Trips + buses
+    # Trips & buses
     Arrival["Trips_Needed"] = np.ceil(Arrival["Effective_Pax"] / BUS_CAPACITY)
     max_trips_A = Arrival_TimeFrame // transit_time
     Arrival["buses_needed_per_flight"] = np.ceil(Arrival["Trips_Needed"] / max_trips_A)
@@ -134,19 +134,25 @@ if uploaded_file:
     max_trips_D = Departure_TimeFrame // transit_time
     Departure["buses_needed_per_flight"] = np.ceil(Departure["Trips_Needed"] / max_trips_D)
 
-    # Time index
-    start_time = min(Arrival["Gate Start Time"].min(), Departure["Gate Start Time"].min()).floor("D")
-    end_time = max(Arrival["Gate End Time"].max(), Departure["Gate End Time"].max()).replace(hour=23, minute=55)
+    # -----------------------
+    # 5-Minute Time Index
+    # -----------------------
+
+    start_time = min(
+        Arrival["Gate Start Time"].min(),
+        Departure["Gate Start Time"].min()
+    ).floor("D")
+
+    end_time = max(
+        Arrival["Gate End Time"].max(),
+        Departure["Gate End Time"].max()
+    ).replace(hour=23, minute=55)
 
     time_index = pd.date_range(start=start_time, end=end_time, freq="5min")
 
-    # Build series
+    # Build 5-min series
     A_total = build_bus_counts(Arrival, time_index)
     D_total = build_bus_counts(Departure, time_index)
-
-    # -----------------------
-    # Final DataFrame
-    # -----------------------
 
     df_buses = pd.DataFrame({
         "Arrival": A_total,
@@ -155,27 +161,24 @@ if uploaded_file:
 
     df_buses.index.name = "Time"
 
-    # Resample FIRST so peak matches graph
-    df_buses_plot = df_buses.resample("15min").max()
-
     # -----------------------
-    # Peak
+    # Peak (5-min exact)
     # -----------------------
 
-    peak_value = int(df_buses_plot.sum(axis=1).max())
+    peak_value = int(df_buses.sum(axis=1).max())
 
     st.subheader("Peak Bus Requirement")
-    st.write(f"Peak buses needed: {peak_value}")
+    st.write(f"Peak buses needed (5-min peak): {peak_value}")
 
     # -----------------------
-    # Plot
+    # Plot (5-min)
     # -----------------------
 
-    st.subheader("Bus Utilization Over Time")
+    st.subheader("Bus Utilization Over Time (5-Min Intervals)")
 
     fig, ax = plt.subplots(figsize=(16, 6))
 
-    df_buses_plot.plot(
+    df_buses.plot(
         kind="bar",
         stacked=True,
         ax=ax,
@@ -187,27 +190,28 @@ if uploaded_file:
     ax.set_title("Number of Buses in Use (Arrival + Departure)")
     ax.legend(loc="upper right")
 
-    midnight_mask = df_buses_plot.index.time == pd.to_datetime("00:00").time()
-    tick_positions = np.where(midnight_mask)[0]
-    tick_labels = df_buses_plot.index[midnight_mask].strftime('%a %d-%m %H:%M')
-
-    ax.set_xticks(tick_positions)
-    ax.set_xticklabels(tick_labels, rotation=45, ha="right")
+    # Reduce x tick density for readability
+    ax.set_xticks(range(0, len(df_buses.index), 12))
+    ax.set_xticklabels(
+        df_buses.index[::12].strftime('%d-%m %H:%M'),
+        rotation=45,
+        ha="right"
+    )
 
     plt.tight_layout()
     st.pyplot(fig)
 
     # -----------------------
-    # Download
+    # Download (5-min data)
     # -----------------------
 
     output = BytesIO()
-    df_buses_plot.reset_index().to_excel(output, index=False, sheet_name="Bus_Requirements")
+    df_buses.reset_index().to_excel(output, index=False, sheet_name="Bus_Requirements")
     output.seek(0)
 
     st.download_button(
-        label="Download Time Series as Excel",
+        label="Download 5-Min Time Series as Excel",
         data=output,
-        file_name="Time_Series.xlsx",
+        file_name="Time_Series_5min.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
