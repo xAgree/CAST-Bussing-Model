@@ -115,9 +115,9 @@ if uploaded_file:
 
             trips = np.ceil(row["Effective_Pax"] / BUS_CAPACITY)
             max_trips = Arrival_TimeFrame // transit_time
-            buses = int(np.ceil(trips / max_trips))
-
-            bus_counts.loc[row["Gate Start"]:row["Gate End"]] += buses
+            if row["Trips_Needed"] % 2 == 1:
+                bus_counts.loc[start:start + delta] += buses - 1
+                bus_counts.loc[start:start + (delta / 2)] += 1
 
         return bus_counts
 
