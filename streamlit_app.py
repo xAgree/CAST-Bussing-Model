@@ -241,7 +241,7 @@ if uploaded_file:
 
     fig, ax = plt.subplots(figsize=(16, 6))
 
-    df_buses_plot = df_buses.resample("15min").max()
+    df_buses.plot(kind="bar", stacked=True, ax=ax, width=1)
 
     df_buses_plot.plot(
         kind="bar",
