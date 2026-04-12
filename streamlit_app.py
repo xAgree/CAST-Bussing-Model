@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import warnings
 from io import BytesIO
 
-warnings.simplefilter(action="ignore", category=pd.errors.SettingWithCopyWarning)
+from pandas.errors import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 # -----------------------------
 # Constants
