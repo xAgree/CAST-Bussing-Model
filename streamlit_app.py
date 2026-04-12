@@ -159,11 +159,11 @@ if uploaded_file:
     fig, ax = plt.subplots(figsize=(16, 6))
 
     df_buses[["Arrival", "Departure"]].plot(
-        kind="bar",
-        stacked=True,
-        ax=ax,
-        width=1
+        kind="line",
+        ax=ax
     )
+
+    ax.fill_between(df_buses.index, df_buses["Total"], alpha=0.2)
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Number of Buses")
@@ -174,7 +174,7 @@ if uploaded_file:
     midnight_mask = df_buses.index.time == pd.to_datetime("00:00").time()
     tick_positions = np.where(midnight_mask)[0]
     tick_labels = df_buses.index[midnight_mask].strftime('%a %d-%m')
-    ax.set_xticks(tick_positions)
+    ax.set_xticks(df_buses.index[midnight_mask])
     ax.set_xticklabels(tick_labels, rotation=45, ha="right")
 
     plt.tight_layout()
