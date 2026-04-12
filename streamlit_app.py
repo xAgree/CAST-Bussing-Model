@@ -181,6 +181,36 @@ if uploaded_file:
     st.pyplot(fig)
 
     # -----------------------------
+    # Flight-level bus requirement list
+    # -----------------------------
+    def calculate_flight_buses(df):
+        flight_list = []
+
+        for _, row in df.iterrows():
+            trips_needed = np.ceil(row["Effective_Pax"] / BUS_CAPACITY)
+            max_trips = int(Arrival_TimeFrame // transit_time)
+            buses_needed = int(np.ceil(trips_needed / max_trips))
+
+            flight_list.append({
+                "Flight_Number": row["Flight_Number"],
+                "Scheduled_Time": row["Scheduled_Time"],
+                "Terminal": row["Terminal"],
+                "Pax_Count": row["Pax_Count"],
+                "Effective_Pax": row["Effective_Pax"],
+                "Buses_Required": buses_needed,
+                "Gate_Start": row["Gate Start Time"],
+                "Gate_End": row["Gate End Time"]
+            })
+
+        return pd.DataFrame(flight_list)
+    arrival_flights = pd.concat([Arrival_Int, Arrival_Dom])
+    departure_flights = pd.concat([Departure_Int, Departure_Dom])
+
+    flight_bus_df = pd.concat([
+        calculate_flight_buses(arrival_flights),
+        calculate_flight_buses(departure_flights)
+    ], ignore_index=True)
+    # -----------------------------
     # Export to Excel
     # -----------------------------
     export_df = df_buses.reset_index()
