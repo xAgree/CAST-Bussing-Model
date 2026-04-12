@@ -183,7 +183,7 @@ if uploaded_file:
     # -----------------------------
     # Export to Excel
     # -----------------------------
-    export_df = df_buses.reset_index()
+    export_df = bus_counts.reset_index()
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         export_df.to_excel(writer, index=False, sheet_name="5min_Bus_Requirements")
