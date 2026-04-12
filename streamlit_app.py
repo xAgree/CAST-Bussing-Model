@@ -183,16 +183,31 @@ if uploaded_file:
     # -----------------------------
     # Export to Excel
     # -----------------------------
-    export_df = bus_counts.reset_index()
+    export_df = df_buses.reset_index()
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        export_df.to_excel(writer, index=False, sheet_name="5min_Bus_Requirements")
+
+        # 5-min time series
+        export_df.to_excel(
+            writer,
+            index=False,
+            sheet_name="5min_Bus_Requirements"
+        )
+
+        # flight-level breakdown
+        flight_bus_df.to_excel(
+            writer,
+            index=False,
+            sheet_name="Flight_Bus_Requirements"
+        )
+
     output.seek(0)
 
     st.download_button(
-        label="Download 5-Minute Bus Requirements",
+        label="Download 5-Min + Flight Bus Requirements",
         data=output,
-        file_name="Bus_Requirements_5min.xlsx",
+        file_name="Bus_Requirements_Detailed.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
