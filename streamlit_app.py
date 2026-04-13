@@ -12,7 +12,7 @@ from io import BytesIO
 # Constants
 # -----------------------------
 BUS_CAPACITY = 60
-Arrival_TimeFrame = 45
+Arrival_TimeFrame = 30
 Departure_TimeFrame = 45
 Domestic_TimeFrame = 15
 transit_time = 21.7
