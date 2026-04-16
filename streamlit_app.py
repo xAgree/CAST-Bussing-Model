@@ -14,7 +14,7 @@ from io import BytesIO
 BUS_CAPACITY = 60
 Arrival_TimeFrame = 45
 Departure_TimeFrame = 45
-Domestic_TimeFrame = 15
+Domestic_TimeFrame = 45
 transit_time = 21.7
 FLIGHT_LOAD_FACTOR = 1
 
