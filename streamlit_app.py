@@ -120,7 +120,8 @@ if uploaded_file:
         bus_counts = pd.Series(0, index=time_index)
         for _, row in df.iterrows():
             trips_needed = np.ceil(row["Effective_Pax"] / BUS_CAPACITY)
-            max_trips = int(Arrival_TimeFrame // transit_time)
+            window_minutes = rollover.total_seconds() / 60
+            max_trips = max(1, int(window_minutes // transit_time))
             buses_needed = int(np.ceil(trips_needed / max_trips))
             bus_counts.loc[row["Gate Start Time"]:row["Gate End Time"]] += buses_needed
         return bus_counts
