@@ -19,7 +19,7 @@ transit_time = 21.7
 FLIGHT_LOAD_FACTOR = .86
 
 
-Arrival_Rollover = pd.Timedelta(minutes=Arrival_TimeFrame-15)
+Arrival_Rollover = pd.Timedelta(minutes=Arrival_TimeFrame)
 Departure_Rollover = pd.Timedelta(minutes=Departure_TimeFrame)
 Domestic_Rollover = pd.Timedelta(minutes=Domestic_TimeFrame)
 
