@@ -34,7 +34,16 @@ if uploaded_file:
     # -----------------------------
     file = pd.read_excel(uploaded_file)
     file.columns = file.columns.str.strip()
-    st.success("File uploaded successfully!")
+    
+    # Exact equivalent of Excel "Select All columns"
+    before = len(file)
+
+    file = file.drop_duplicates(keep="first")
+
+    after = len(file)
+
+    st.success(f"File uploaded successfully! Removed {before - after} duplicate rows.")
+
 
     # -----------------------------
     # Extract Arrival & Departure
